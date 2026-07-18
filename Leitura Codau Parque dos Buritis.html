@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Leitura Codau - Parque dos Buritis</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; background: #f0f2f5; color: #333; }
+        h1 { text-align: center; color: #165b33; margin-bottom: 5px; font-size: 1.6em; } 
+        .subtitle { text-align: center; color: #666; font-size: 1.1em; font-weight: bold; margin-bottom: 20px; }
+        .header-card, .floor-card { background: white; margin-bottom: 15px; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .floor-title { font-size: 1.3em; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 8px; text-align: center; }
+        .apt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .input-group { display: flex; flex-direction: column; }
+        label { font-weight: 800; color: #000; margin-bottom: 5px; text-align: center; font-size: 1.1em; }
+        input { padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1.3em; font-weight: bold; color: red; text-align: center; width: 100%; box-sizing: border-box; background: #fafafa; }
+        input[type="date"] { font-family: inherit; color: #333; }
+        input:focus { border-color: #165b33; outline: none; background: #fff; }
+        .btn-export { width: 100%; padding: 15px; background: #165b33; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        .btn-clear { width: 100%; padding: 15px; background: #dc3545; color: white; border: none; border-radius: 8px; font-size: 1.1em; font-weight: bold; margin-top: 15px; margin-bottom: 40px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>Leitura Codau</h1>
+    <div class="subtitle">Parque dos Buritis</div>
+    
+    <div class="header-card">
+        <div class="input-group">
+            <label style="text-align: left; font-weight: 600;">Data da Leitura:</label>
+            <input type="date" id="data-leitura">
+        </div>
+    </div>
+
+    <div id="app"></div>
+    
+    <button class="btn-export" onclick="gerarPDFGarantido()">Gerar Relatório (PDF)</button>
+    <button class="btn-clear" onclick="limparDados()">Nova Leitura (Limpar Tudo)</button>
+
+    <script>
+        const dataInput = document.getElementById('data-leitura');
+        dataInput.value = localStorage.getItem('data-leitura') || '';
+        dataInput.addEventListener('input', (e) => localStorage.setItem('data-leitura', e.target.value));
+
+        const container = document.getElementById('app');
+        const ordens = ['04', '03', '01', '02']; 
+
+        for (let andar = 19; andar >= 1; andar--) {
+            const card = document.createElement('div');
+            card.className = 'floor-card';
+            card.innerHTML = `<div class="floor-title">${andar}º Andar</div>`;
+            const grid = document.createElement('div');
+            grid.className = 'apt-grid';
+
+            ordens.forEach(final => {
+                const numApt = `${andar}${final}`;
+                const aptDiv = document.createElement('div');
+                aptDiv.className = 'input-group';
+                
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.id = `apt-${numApt}`;
+                input.placeholder = '0';
+                
+                input.value = localStorage.getItem(`apt-${numApt}`) || '';
+                input.addEventListener('input', (e) => localStorage.setItem(`apt-${numApt}`, e.target.value));
+
+                aptDiv.innerHTML = `<label>Apt ${numApt}</label>`;
+                aptDiv.appendChild(input);
+                grid.appendChild(aptDiv);
+            });
+
+            card.appendChild(grid);
+            container.appendChild(card);
+        }
+
+        // FUNÇÃO À PROVA DE FALHAS: Reescreve a página inteira para imprimir
+        function gerarPDFGarantido() {
+            const dataSalva = document.getElementById('data-leitura').value;
+            let textoData = "Não informada";
+            if (dataSalva) {
+                const partes = dataSalva.split('-');
+                textoData = `${partes[2]}/${partes[1]}/${partes[0]}`;
+            }
+
+            // Constrói o HTML puro e simples apenas com a tabela
+            let htmlPrint = `
+                <html>
+                <head>
+                    <title>Leitura Codau - Parque dos Buritis</title>
+                </head>
+                <body style="font-family: sans-serif; background: white; color: black; padding: 10px;">
+                    <h2 style="text-align: center; color: #165b33; margin-bottom: 5px;">Leitura Codau - Parque dos Buritis</h2>
+                    <p style="text-align: center; color: #333; margin-bottom: 20px;">Data: ${textoData}</p>
+                    <table style="width: 100%; border-collapse: collapse; text-align: center;" border="1">
+                        <tr style="background-color: #165b33; color: white;">
+                            <th style="padding: 10px; border: 1px solid black;">Andar</th>
+                            <th style="padding: 10px; border: 1px solid black;">Final 04</th>
+                            <th style="padding: 10px; border: 1px solid black;">Final 03</th>
+                            <th style="padding: 10px; border: 1px solid black;">Final 01</th>
+                            <th style="padding: 10px; border: 1px solid black;">Final 02</th>
+                        </tr>
+            `;
+
+            for (let andar = 19; andar >= 1; andar--) {
+                htmlPrint += `<tr><td style="padding: 10px; font-weight: bold; background-color: #e8f0fe; border: 1px solid black;">${andar}º</td>`;
+                ordens.forEach(final => {
+                    const numApt = `${andar}${final}`;
+                    const valor = localStorage.getItem(`apt-${numApt}`) || '-';
+                    htmlPrint += `<td style="padding: 10px; border: 1px solid black;">
+                        <strong>Apt ${numApt}:</strong><br>
+                        <strong style="color: red; font-size: 16px;">${valor}</strong>
+                    </td>`;
+                });
+                htmlPrint += `</tr>`;
+            }
+            htmlPrint += `</table></body></html>`;
+
+            // Substitui toda a página por este HTML limpo para evitar bugs do celular
+            document.write(htmlPrint);
+            document.close();
+
+            // Espera meio segundo para a tabela aparecer e chama a impressão do celular
+            setTimeout(() => {
+                window.print();
+                
+                // Recarrega o aplicativo automaticamente após gerar o PDF
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }, 500);
+        }
+
+        function limparDados() {
+            if(confirm("Deseja apagar TODAS as leituras e a data?")) {
+                localStorage.clear();
+                window.location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
